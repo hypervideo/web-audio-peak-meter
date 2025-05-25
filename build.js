@@ -33,6 +33,7 @@ async function buildWorklet(fileName) {
   };
   const bundle = await rollup.rollup(inputOptions);
   const { output } = await bundle.generate(outputOptions);
+  await fs.mkdir(path.dirname(outPath), { recursive: true });
   await fs.writeFile(outPath, output[0].code);
   await bundle.close();
   await fs.copyFile(`./lib/${fileName}-processor.txt`, `./src/${fileName}-processor.txt`);
