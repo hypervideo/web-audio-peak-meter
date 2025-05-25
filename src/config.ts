@@ -1,31 +1,26 @@
 export interface PeakMeterConfig {
-  vertical: boolean,
-  borderSize: number,
-  fontSize: number,
-  backgroundColor: string,
-  tickColor: string,
-  labelColor: string,
-  gradient: Array<string>,
-  dbRangeMin: number,
-  dbRangeMax: number,
-  dbTickSize: number,
-  maskTransition: string,
-  audioMeterStandard: string,
-  peakHoldDuration: number,
-};
+  audioMeterStandard: string;
+  peakHoldDuration: number;
+  /**
+   * When providing a callback, determine how often it should be called.
+   * - 'immediate': every audio worklet message will trigger an update.
+   * - 'requestAnimationFrame': the callback will be called on the next animation frame.
+   * - number: the callback will be called every `number` milliseconds.
+   */
+  peakCallbackDelay?: 'immediate' | 'requestAnimationFrame' | number;
+  /**
+   * Determines if and in what range the peaks should be normalized.
+   */
+  peakCallbackNormalizeVolume?: {
+    dbRangeMin: number;
+    dbRangeMax: number;
+    normalizedRangeMin: number;
+    normalizedRangeMax: number;
+  };
+}
 
 export const defaultConfig: PeakMeterConfig = {
-  vertical: false,
-  borderSize: 2,
-  fontSize: 9,
-  backgroundColor: 'black',
-  tickColor: '#ddd',
-  labelColor: '#ddd',
-  gradient: ['red 1%', '#ff0 16%', 'lime 45%', '#080 100%'],
-  dbRangeMin: -48,
-  dbRangeMax: 0,
-  dbTickSize: 6,
-  maskTransition: '0.1s',
   audioMeterStandard: 'peak-sample',
   peakHoldDuration: 0,
+  peakCallbackDelay: 'immediate',
 };

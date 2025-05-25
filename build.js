@@ -79,6 +79,10 @@ async function buildMain() {
       `./lib/web-audio-peak-meter-${version}.min.js`,
       `./docs/web-audio-peak-meter-${version}.min.js`
     );
+    await fs.copyFile(
+      `./lib/web-audio-peak-meter-${version}.min.js.map`,
+      `./docs/web-audio-peak-meter-${version}.min.js.map`
+    );
     console.log('Main library rebuilt.');
   } catch (err) {
     console.log(`problem creating bundle: ${err}`);

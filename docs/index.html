@@ -10,72 +10,37 @@
 <hr>
 <h1>Web Audio Peak Meters</h1>
 <p>Customizable peak meters, using the web audio API. It can measure peak or true peak based on <a href="https://www.itu.int/rec/R-REC-BS.1770">ITU-R BS.1770</a></p>
-<h2>Examples</h2>
-<ul>
-<li><a href="/web-audio-peak-meter/examples/audio.html">Single audio element</a></li>
-<li><a href="/web-audio-peak-meter/examples/video.html">Single video element</a></li>
-<li><a href="/web-audio-peak-meter/examples/osc.html">An oscillator node</a></li>
-<li><a href="/web-audio-peak-meter/examples/pre-fader-video.html">Pre-fader metering</a></li>
-<li><a href="/web-audio-peak-meter/examples/variations.html">Variations using configuration</a></li>
-<li><a href="/web-audio-peak-meter/examples/cleanup.html">Dynamic creation and cleanup</a></li>
-<li><a href="/web-audio-peak-meter/examples/nodom.html">Usage without a DOM node</a></li>
-</ul>
 <h2>Usage (basic)</h2>
 <p>To use these meters, first create a <code>&lt;div&gt;</code> with a width and height and an <code>&lt;audio&gt;</code> element:</p>
-<pre><code class="language-html">&lt;div id=&quot;my-peak-meter&quot; style=&quot;width: 5em; height: 20em; margin: 1em 0;&quot;&gt;&lt;/div&gt;
-&lt;audio id=&quot;my-audio&quot; preload=&quot;metadata&quot; controls=&quot;controls&quot;&gt;
+<pre><code class="language-html">&lt;audio id=&quot;my-audio&quot; preload=&quot;metadata&quot; controls=&quot;controls&quot;&gt;
   &lt;source src=&quot;audio/marines_hymn.mp3&quot; type=&quot;audio/mpeg&quot; /&gt;
 &lt;/audio&gt;
 </code></pre>
 <p>Then, at the bottom of your <code>&lt;body&gt;</code> tag, add the script tag for these meters. I recommend copying the latest <code>web-audio-peak-meter-&lt;version&gt;.min.js</code> file from the <code>docs</code> directory and self-hosting it, or installing via <a href="https://www.npmjs.com/package/web-audio-peak-meter">npm</a> and bundling it with your application. Next, create an <code>AudioContext</code> if you don&#39;t have one already and create an <a href="https://developer.mozilla.org/en-US/docs/Web/API/AudioNode">AudioNode</a> from the <code>&lt;audio&gt;</code> element, connecting it to the destination node. Finally, create a meter node and call the <code>createMeter</code> function, passing in the Element object, the meter node, and an optional object for configuration options, like so:</p>
 <pre><code class="language-html">&lt;script&gt;
-  const myMeterElement = document.getElementById(&#39;my-peak-meter&#39;);
   const myAudio = document.getElementById(&#39;my-audio&#39;);
   const audioCtx = new window.AudioContext();
   const sourceNode = audioCtx.createMediaElementSource(myAudio);
   sourceNode.connect(audioCtx.destination);
-  const myMeter = new webAudioPeakMeter.WebAudioPeakMeter(sourceNode, myMeterElement);
+  const myMeter = new WebAudioPeakMeter(sourceNode, {
+    audioMeterStandard: &quot;peak-sample&quot;,
+    peakHoldDuration: 0,
+  });
   myAudio.addEventListener(&#39;play&#39;, function () {
     audioCtx.resume();
   });
+  const interval = setInterval(() =&gt; {
+      const peaks = myMeter.getPeaks();
+      if (peaks) {
+          const volume = Math.max(...peaks.currentDB);
+          console.log(`Current volume: ${volume.toFixed(2)} dB`);
+      }
+  }, 1000);
 &lt;/script&gt;
 </code></pre>
-<p>In this example we used an HTML5 audio element, but these meters can work with any web audio API source node. This example was just meant to show the simplest possible use case. If you are already familiar with the web audio API adapting this example to your needs should be fairly self-explanatory, but please reach out if anything isn&#39;t working or doesn&#39;t make sense.</p>
-<h2>Usage (advanced)</h2>
-<p>If you are compiling your javascript with a tool like browserify, webpack, or rollup, you can integrate these meters into your site using the CommonJS <code>require()</code> syntax.</p>
-<p>First, add web-audio-peak-meter as a dev dependency to your project:</p>
-<pre><code class="language-bash">npm install --save-dev web-audio-peak-meter
-</code></pre>
-<p>Next, import the webAudioPeakMeter module into your javascript:</p>
-<pre><code class="language-js">const webAudioPeakMeter = require(&#39;web-audio-peak-meter&#39;);
-</code></pre>
-<p>Finally, use as you would in the above example:</p>
-<pre><code class="language-js">var myMeterElement = document.getElementById(&#39;my-peak-meter&#39;);
-var myAudio = document.getElementById(&#39;my-audio&#39;);
-var audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-var sourceNode = audioCtx.createMediaElementSource(myAudio);
-sourceNode.connect(audioCtx.destination);
-var meterNode = webAudioPeakMeter.createMeterNode(sourceNode, audioCtx);
-webAudioPeakMeter.createMeter(myMeterElement, meterNode, {});
-myAudio.addEventListener(&#39;play&#39;, function () {
-  audioCtx.resume();
-});
-</code></pre>
-<p>(Note: the markup remains the same as in the basic example)</p>
 <h2>Options</h2>
 <p>The following options options are supported (the third parameter of the constructor)</p>
 <ul>
-<li>vertical (boolean): if set to <code>true</code>, displays a vertical meter (default: <code>false</code>)</li>
-<li>borderSize (number): the number of pixels to use as a border (default: <code>2</code>)</li>
-<li>fontSize (number): the font size in pixels used by the labels (default: <code>9</code>)</li>
-<li>backgroundColor (string): the background of the meter - can take any css format, for example <code>#123456</code>, <code>rgba(0,0,0, 0.5)</code>, or <code>slategray</code> (default: <code>black</code>),</li>
-<li>tickColor (string): the color of the ticks - can take any css format (default: <code>lightgray</code>),</li>
-<li>labelColor (string): the color of the held peak labels - can take any css format (default: <code>lightgray</code>),</li>
-<li>gradient (string[]): an array of space delimited color/percentage pairs to be used by the meter bars (default: <code>[&#39;red 1%&#39;, &#39;#ff0 16%&#39;, &#39;lime 45%&#39;, &#39;#080 100%&#39;]</code>),</li>
-<li>dbRangeMin (number): the decibel level of the floor of the metter (default: <code>-48</code>)</li>
-<li>dbRangeMax (number): the decibel level of the ceiling of the metter (default: <code>0</code>)</li>
-<li>dbTickSize (number): the number of decibels to have between ticks (default: <code>6</code>)</li>
-<li>maskTransition (string): value used for the <code>transition</code> property of the meter bars. Use a longer value for a smoother animation and a shorter value for faster updates (default: <code>0.1s</code>)</li>
 <li>audioMeterStandard (string): Can be either <code>peak-sample</code>, or <code>true-peak</code> (default: <code>peak-sample</code>)</li>
 <li>peakHoldDuration (number): the number, in milliseconds, to hold the peak value before resetting (default: <code>0</code>, meaning never reset)</li>
 </ul>
@@ -95,8 +60,6 @@ myAudio.addEventListener(&#39;play&#39;, function () {
 npm run start
 </code></pre>
 <p>And open a browser to <a href="http://localhost:6080/web-audio-peak-meter/index.html">http://localhost:6080/web-audio-peak-meter/index.html</a> to see a local version of the docs page.</p>
-<h2>Contributing</h2>
-<p>Contributions are welcome! I&#39;d love to hear any ideas for how these meters could be more user-friendly as well as about any bugs or unclear documentation. If you are at all interested in this project, please create an issue or pull request on this project&#39;s <a href="https://github.com/esonderegger/web-audio-peak-meter">github page</a>.</p>
 <h2>Copyright and license</h2>
 <p>Code and documentation copyright 2016 <a href="https://rpy.xyz">Evan Sonderegger</a> and released under the <a href="https://github.com/esonderegger/web-audio-peak-meter/blob/master/LICENSE">MIT License</a>.</p>
 
