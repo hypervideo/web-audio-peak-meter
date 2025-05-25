@@ -22,20 +22,24 @@
   const audioCtx = new window.AudioContext();
   const sourceNode = audioCtx.createMediaElementSource(myAudio);
   sourceNode.connect(audioCtx.destination);
-  const myMeter = new WebAudioPeakMeter(sourceNode, {
-    audioMeterStandard: &quot;peak-sample&quot;,
-    peakHoldDuration: 0,
-  });
-  myAudio.addEventListener(&#39;play&#39;, function () {
-    audioCtx.resume();
-  });
-  const interval = setInterval(() =&gt; {
-      const peaks = myMeter.getPeaks();
-      if (peaks) {
-          const volume = Math.max(...peaks.currentDB);
-          console.log(`Current volume: ${volume.toFixed(2)} dB`);
-      }
-  }, 1000);
+  this.meter = new WebAudioPeakMeter(
+      sourceNode,
+      (volume) =&gt; {
+          console.log(`Current volume: ${volume.toFixed(2)}`);
+      },
+      {
+          audioMeterStandard: &quot;peak-sample&quot;,
+          // 10 times per second
+          peakCallbackDelay: 1000 / 10, 
+          // Optional, map dB values to a normalized range
+          peakCallbackNormalizeVolume: {
+              dbRangeMin: -48,
+              dbRangeMax: 0,
+              normalizedRangeMin: 0,
+              normalizedRangeMax: 100,
+          },
+      },
+  );
 &lt;/script&gt;
 </code></pre>
 <h2>Options</h2>

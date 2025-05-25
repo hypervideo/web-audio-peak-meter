@@ -24,20 +24,24 @@ Then, at the bottom of your `<body>` tag, add the script tag for these meters. I
   const audioCtx = new window.AudioContext();
   const sourceNode = audioCtx.createMediaElementSource(myAudio);
   sourceNode.connect(audioCtx.destination);
-  const myMeter = new WebAudioPeakMeter(sourceNode, {
-    audioMeterStandard: "peak-sample",
-    peakHoldDuration: 0,
-  });
-  myAudio.addEventListener('play', function () {
-    audioCtx.resume();
-  });
-  const interval = setInterval(() => {
-      const peaks = myMeter.getPeaks();
-      if (peaks) {
-          const volume = Math.max(...peaks.currentDB);
-          console.log(`Current volume: ${volume.toFixed(2)} dB`);
-      }
-  }, 1000);
+  this.meter = new WebAudioPeakMeter(
+      sourceNode,
+      (volume) => {
+          console.log(`Current volume: ${volume.toFixed(2)}`);
+      },
+      {
+          audioMeterStandard: "peak-sample",
+          // 10 times per second
+          peakCallbackDelay: 1000 / 10,
+          // Optional, map dB values to a normalized range
+          peakCallbackNormalizeVolume: {
+              dbRangeMin: -48,
+              dbRangeMax: 0,
+              normalizedRangeMin: 0,
+              normalizedRangeMax: 100,
+          },
+      },
+  );
 </script>
 ```
 
