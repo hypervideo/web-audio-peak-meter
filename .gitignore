@@ -5,3 +5,5 @@ lib
 
 src/*-processor.txt
 docs/*.d.ts
+/.direnv/
+/.dir-locals.el
