@@ -1,3 +1,7 @@
+Fork of https://github.com/esonderegger/web-audio-peak-meter that only includes peak metering and corresponding audio worklets.
+
+------
+
 # Web Audio Peak Meters
 
 Customizable peak meters, using the web audio API. It can measure peak or true peak based on [ITU-R BS.1770](https://www.itu.int/rec/R-REC-BS.1770)
