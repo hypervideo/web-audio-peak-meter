@@ -1,12 +1,4 @@
 import { PeakMeterConfig, defaultConfig } from './config';
-import {
-  audioClipPath,
-  createContainerDiv,
-  createTicks,
-  createChannelElements,
-  createBars,
-  createPeakLabels,
-} from './markup';
 import { dbFromFloat } from './utils';
 import peakSampleProcessor from './peak-sample-processor.txt';
 import truePeakProcessor from './true-peak-processor.txt';
@@ -16,36 +8,22 @@ export class WebAudioPeakMeter {
   srcNode: AudioNode;
   node?: AudioWorkletNode;
   config: PeakMeterConfig;
-  parent?: HTMLElement;
-  ticks?: Array<HTMLElement>;
-  channelElements?: Array<HTMLElement>;
-  bars?: Array<HTMLElement>;
-  peakLabels?: Array<HTMLElement>;
   tempPeaks: Array<number>;
   heldPeaks: Array<number>;
   peakHoldTimeouts: Array<number>;
   animationRequestId?: number;
 
-  constructor(src: AudioNode, ele: HTMLElement, options = {}) {
+  constructor(src: AudioNode, options = {}) {
     this.srcNode = src;
     this.config = Object.assign({ ...defaultConfig }, options);
     this.channelCount = src.channelCount;
     this.tempPeaks = new Array(this.channelCount).fill(0.0);
     this.heldPeaks = new Array(this.channelCount).fill(0.0);
     this.peakHoldTimeouts = new Array(this.channelCount).fill(0);
-    if (ele) {
-      this.parent = createContainerDiv(ele, this.config);
-      this.channelElements = createChannelElements(this.parent, this.config, this.channelCount);
-      this.peakLabels = createPeakLabels(this.channelElements, this.config);
-      this.bars = createBars(this.channelElements, this.config);
-      this.ticks = createTicks(this.parent, this.config);
-      this.parent.addEventListener('click', this.clearPeaks.bind(this));
-      this.paintMeter();
-    }
     this.initNode();
   }
 
-  async initNode() {
+  private async initNode() {
     const { audioMeterStandard } = this.config;
     try {
       this.node = new AudioWorkletNode(this.srcNode.context, `${audioMeterStandard}-processor`, {
@@ -65,7 +43,7 @@ export class WebAudioPeakMeter {
     this.srcNode.connect(this.node).connect(this.srcNode.context.destination);
   }
 
-  handleNodePortMessage(ev: MessageEvent) {
+  private handleNodePortMessage(ev: MessageEvent) {
     if (ev.data.type === 'message') {
       console.log(ev.data.message);
     }
@@ -97,39 +75,17 @@ export class WebAudioPeakMeter {
     }
   }
 
-  paintMeter() {
-    const { dbRangeMin, dbRangeMax, vertical } = this.config;
-    if (this.bars) {
-      this.bars.forEach((barDiv, i) => {
-        const tempPeak = dbFromFloat(this.tempPeaks[i]);
-        const clipPath = audioClipPath(tempPeak, dbRangeMin, dbRangeMax, vertical);
-        barDiv.style.clipPath = clipPath;
-      });
-    }
-    if (this.peakLabels) {
-      this.peakLabels.forEach((textLabel, i) => {
-        if (this.heldPeaks[i] === 0.0) {
-          textLabel.textContent = '-∞';
-        } else {
-          const heldPeak = dbFromFloat(this.heldPeaks[i]);
-          textLabel.textContent = heldPeak.toFixed(1);
-        }
-      });
-    }
-    this.animationRequestId = window.requestAnimationFrame(this.paintMeter.bind(this));
-  }
-
-  clearPeak(i: number) {
+  private clearPeak(i: number) {
     this.heldPeaks[i] = this.tempPeaks[i];
   }
 
-  clearPeaks() {
+  public clearPeaks() {
     for (let i = 0; i < this.heldPeaks.length; i += 1) {
       this.clearPeak(i);
     }
   }
 
-  getPeaks() {
+  public getPeaks() {
     return {
       current: this.tempPeaks,
       maxes: this.heldPeaks,
@@ -141,13 +97,6 @@ export class WebAudioPeakMeter {
   cleanup() {
     if (this.node) {
       this.node.disconnect();
-    }
-    if (this.parent) {
-      this.parent.removeEventListener('click', this.clearPeaks.bind(this));
-      if (this.animationRequestId !== undefined) {
-        window.cancelAnimationFrame(this.animationRequestId);
-      }
-      this.parent.remove();
     }
   }
 }
