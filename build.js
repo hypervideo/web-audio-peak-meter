@@ -26,7 +26,7 @@ async function buildWorklet(fileName) {
       terserPlugin.terser(),
     ],
   };
-  const outPath = `./src/${fileName}-processor.txt`;
+  const outPath = `./lib/${fileName}-processor.txt`;
   const outputOptions = {
     file: outPath,
     format: 'esm',
@@ -35,6 +35,7 @@ async function buildWorklet(fileName) {
   const { output } = await bundle.generate(outputOptions);
   await fs.writeFile(outPath, output[0].code);
   await bundle.close();
+  await fs.copyFile(`./lib/${fileName}-processor.txt`, `./src/${fileName}-processor.txt`);
   console.log(`${fileName} worklet rebuilt.`);
 }
 
@@ -52,7 +53,7 @@ async function buildMain() {
   };
   const version = process.env.npm_package_version;
   const iifeOutput = {
-    file: `./docs/web-audio-peak-meter-${version}.min.js`,
+    file: `./lib/web-audio-peak-meter-${version}.min.js`,
     format: 'iife',
     name: 'webAudioPeakMeter',
     exports: 'named',
@@ -74,6 +75,10 @@ async function buildMain() {
     await bundle.write(esmOutput);
     await bundle.write(cjsOutput);
     await bundle.close();
+    await fs.copyFile(
+      `./lib/web-audio-peak-meter-${version}.min.js`,
+      `./docs/web-audio-peak-meter-${version}.min.js`
+    );
     console.log('Main library rebuilt.');
   } catch (err) {
     console.log(`problem creating bundle: ${err}`);
