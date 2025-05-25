@@ -187,7 +187,7 @@ async function localDev() {
   console.log(`Now serving at http://localhost:${port}`);
   process.on('SIGINT', async () => {
     console.log('Stopping local server and watchers...');
-    await server.close();
+    server.close();
     await watcher.close();
     console.log('Local server and watchers have been stopped');
   });
