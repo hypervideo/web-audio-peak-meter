@@ -128,7 +128,7 @@ export class WebAudioPeakMeter {
   }
 
   public getNormalizedCurrentPeakVolume() {
-    let volume = dbFromFloat(Math.max(...this.tempPeaks));
+    let volume = dbFromFloat(Math.max(...this.heldPeaks));
     if (this.config.peakCallbackNormalizeVolume) {
       const { dbRangeMin, dbRangeMax, normalizedRangeMin, normalizedRangeMax } =
         this.config.peakCallbackNormalizeVolume;
