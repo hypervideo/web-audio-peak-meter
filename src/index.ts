@@ -24,7 +24,7 @@ export class WebAudioPeakMeter {
      */
 
     private peakCallback?: (peakVolume: number) => void,
-    options: Partial<PeakMeterConfig> = {}
+    options: Partial<PeakMeterConfig> = {},
   ) {
     this.config = Object.assign({ ...defaultConfig }, options);
     this.channelCount = srcNode.channelCount;
@@ -151,6 +151,11 @@ export class WebAudioPeakMeter {
     }
     this.clearPeaks();
     if (this.node) {
+      try {
+        this.srcNode.disconnect(this.node);
+      } catch {
+        // Errors when the node is already disconnected, which we can safely ignore.
+      }
       this.node.disconnect();
     }
   }
