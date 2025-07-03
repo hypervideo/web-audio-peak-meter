@@ -8,10 +8,8 @@ export class WebAudioPeakMeter {
   node?: AudioWorkletNode;
   config: PeakMeterConfig;
   tempPeaks: Array<number>;
-  tempPeaksUpdated: Array<boolean>;
   heldPeaks: Array<number>;
-  heldPeaksDirty: Array<boolean>;
-  peakHoldTimeouts: Array<number>;
+  peakHoldIntervals: Array<number | undefined>;
   animationRequestId?: number;
   intervalId?: number;
 
@@ -31,10 +29,8 @@ export class WebAudioPeakMeter {
     this.config = Object.assign({ ...defaultConfig }, options);
     this.channelCount = srcNode.channelCount;
     this.tempPeaks = new Array(this.channelCount).fill(0.0);
-    this.tempPeaksUpdated = new Array(this.channelCount).fill(false);
     this.heldPeaks = new Array(this.channelCount).fill(0.0);
-    this.heldPeaksDirty = new Array(this.channelCount).fill(false);
-    this.peakHoldTimeouts = new Array(this.channelCount).fill(0);
+    this.peakHoldIntervals = new Array(this.channelCount).fill(undefined);
     this.initNode();
   }
 
@@ -90,25 +86,22 @@ export class WebAudioPeakMeter {
           this.tempPeaks[i] = 0.0;
         }
       }
-      this.tempPeaksUpdated.fill(true);
       if (peaks.length < this.channelCount) {
         this.tempPeaks.fill(0.0, peaks.length);
       }
       for (let i = 0; i < peaks.length; i += 1) {
-        if (peaks[i] > this.heldPeaks[i] || this.heldPeaksDirty[i]) {
+        if (peaks[i] > this.heldPeaks[i]) {
           this.heldPeaks[i] = peaks[i];
-          this.heldPeaksDirty[i] = false;
-          if (this.peakHoldTimeouts[i]) {
-            clearTimeout(this.peakHoldTimeouts[i]);
+
+          // Re-start the interval so that the new peak is held for 1 full duration.
+          if (this.peakHoldIntervals[i]) {
+            clearInterval(this.peakHoldIntervals[i]);
           }
           if (this.config.peakHoldDuration) {
-            this.tempPeaksUpdated[i] = false;
-            this.peakHoldTimeouts[i] = window.setTimeout(() => {
-              this.clearPeak(i);
-              if (!this.tempPeaksUpdated[i]) {
-                this.heldPeaksDirty[i] = true;
-              }
-            }, this.config.peakHoldDuration);
+            this.peakHoldIntervals[i] = window.setInterval(
+              () => this.clearPeak(i),
+              this.config.peakHoldDuration,
+            );
           }
         }
       }
@@ -158,6 +151,12 @@ export class WebAudioPeakMeter {
     if (this.animationRequestId) {
       cancelAnimationFrame(this.animationRequestId);
       this.animationRequestId = undefined;
+    }
+    for (let i = 0; i < this.peakHoldIntervals.length; ++i) {
+      if (this.peakHoldIntervals[i]) {
+        clearInterval(this.peakHoldIntervals[i]);
+        this.peakHoldIntervals[i] = undefined;
+      }
     }
     this.clearPeaks();
     if (this.node) {
