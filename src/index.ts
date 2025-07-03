@@ -8,7 +8,9 @@ export class WebAudioPeakMeter {
   node?: AudioWorkletNode;
   config: PeakMeterConfig;
   tempPeaks: Array<number>;
+  tempPeaksUpdated: Array<boolean>;
   heldPeaks: Array<number>;
+  heldPeaksDirty: Array<boolean>;
   peakHoldTimeouts: Array<number>;
   animationRequestId?: number;
   intervalId?: number;
@@ -29,7 +31,9 @@ export class WebAudioPeakMeter {
     this.config = Object.assign({ ...defaultConfig }, options);
     this.channelCount = srcNode.channelCount;
     this.tempPeaks = new Array(this.channelCount).fill(0.0);
+    this.tempPeaksUpdated = new Array(this.channelCount).fill(false);
     this.heldPeaks = new Array(this.channelCount).fill(0.0);
+    this.heldPeaksDirty = new Array(this.channelCount).fill(false);
     this.peakHoldTimeouts = new Array(this.channelCount).fill(0);
     this.initNode();
   }
@@ -86,18 +90,24 @@ export class WebAudioPeakMeter {
           this.tempPeaks[i] = 0.0;
         }
       }
+      this.tempPeaksUpdated.fill(true);
       if (peaks.length < this.channelCount) {
         this.tempPeaks.fill(0.0, peaks.length);
       }
       for (let i = 0; i < peaks.length; i += 1) {
-        if (peaks[i] > this.heldPeaks[i]) {
+        if (peaks[i] > this.heldPeaks[i] || this.heldPeaksDirty[i]) {
           this.heldPeaks[i] = peaks[i];
+          this.heldPeaksDirty[i] = false;
           if (this.peakHoldTimeouts[i]) {
             clearTimeout(this.peakHoldTimeouts[i]);
           }
           if (this.config.peakHoldDuration) {
+            this.tempPeaksUpdated[i] = false;
             this.peakHoldTimeouts[i] = window.setTimeout(() => {
               this.clearPeak(i);
+              if (!this.tempPeaksUpdated[i]) {
+                this.heldPeaksDirty[i] = true;
+              }
             }, this.config.peakHoldDuration);
           }
         }
