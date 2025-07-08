@@ -9,7 +9,7 @@ export class WebAudioPeakMeter {
   config: PeakMeterConfig;
   tempPeaks: Array<number>;
   heldPeaks: Array<number>;
-  peakHoldTimeouts: Array<number>;
+  peakHoldIntervals: Array<number | undefined>;
   animationRequestId?: number;
   intervalId?: number;
 
@@ -30,7 +30,7 @@ export class WebAudioPeakMeter {
     this.channelCount = srcNode.channelCount;
     this.tempPeaks = new Array(this.channelCount).fill(0.0);
     this.heldPeaks = new Array(this.channelCount).fill(0.0);
-    this.peakHoldTimeouts = new Array(this.channelCount).fill(0);
+    this.peakHoldIntervals = new Array(this.channelCount).fill(undefined);
     this.initNode();
   }
 
@@ -92,13 +92,16 @@ export class WebAudioPeakMeter {
       for (let i = 0; i < peaks.length; i += 1) {
         if (peaks[i] > this.heldPeaks[i]) {
           this.heldPeaks[i] = peaks[i];
-          if (this.peakHoldTimeouts[i]) {
-            clearTimeout(this.peakHoldTimeouts[i]);
+
+          // Re-start the interval so that the new peak is held for 1 full duration.
+          if (this.peakHoldIntervals[i]) {
+            clearInterval(this.peakHoldIntervals[i]);
           }
           if (this.config.peakHoldDuration) {
-            this.peakHoldTimeouts[i] = window.setTimeout(() => {
-              this.clearPeak(i);
-            }, this.config.peakHoldDuration);
+            this.peakHoldIntervals[i] = window.setInterval(
+              () => this.clearPeak(i),
+              this.config.peakHoldDuration,
+            );
           }
         }
       }
@@ -148,6 +151,12 @@ export class WebAudioPeakMeter {
     if (this.animationRequestId) {
       cancelAnimationFrame(this.animationRequestId);
       this.animationRequestId = undefined;
+    }
+    for (let i = 0; i < this.peakHoldIntervals.length; ++i) {
+      if (this.peakHoldIntervals[i]) {
+        clearInterval(this.peakHoldIntervals[i]);
+        this.peakHoldIntervals[i] = undefined;
+      }
     }
     this.clearPeaks();
     if (this.node) {
