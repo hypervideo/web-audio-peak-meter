@@ -85,7 +85,19 @@ buttonElement.addEventListener(&#039;click&#039;, () =&gt; {
   }
 });
 
-const meterInstance = new webAudioPeakMeter.WebAudioPeakMeter(sourceNode);
+const meterInstance = new webAudioPeakMeter.WebAudioPeakMeter(sourceNode, (volume) =&gt; {
+  console.log(&#039;Volume callback:&#039;, volume);
+}, {
+  audioMeterStandard: &#039;peak-sample&#039;,
+  peakCallbackDelay: &#039;immediate&#039;,
+  peakHoldDuration: 5000,
+  peakCallbackNormalizeVolume: {
+    dbRangeMin: -48,
+    dbRangeMax: 0,
+    normalizedRangeMin: 0,
+    normalizedRangeMax: 100,
+  },
+});
 
 clearPeaks.addEventListener(&#039;click&#039;, () =&gt; {
   meterInstance.clearPeaks();
@@ -101,7 +113,7 @@ getPeaks.addEventListener(&#039;click&#039;, () =&gt; {
   maxesDB.innerText = displayFloatArray(peaks.maxesDB);
 });
 </code></pre>
-<script src="/web-audio-peak-meter/web-audio-peak-meter-4.0.0.min.js"></script>
+<script src="/web-audio-peak-meter/web-audio-peak-meter-4.1.0.min.js"></script>
 <script>
 const audioCtx = new AudioContext();
 const audioElement = document.getElementById('the-audio');
@@ -137,7 +149,19 @@ buttonElement.addEventListener('click', () => {
   }
 });
 
-const meterInstance = new webAudioPeakMeter.WebAudioPeakMeter(sourceNode);
+const meterInstance = new webAudioPeakMeter.WebAudioPeakMeter(sourceNode, (volume) => {
+  console.log('Volume callback:', volume);
+}, {
+  audioMeterStandard: 'peak-sample',
+  peakCallbackDelay: 'immediate',
+  peakHoldDuration: 5000,
+  peakCallbackNormalizeVolume: {
+    dbRangeMin: -48,
+    dbRangeMax: 0,
+    normalizedRangeMin: 0,
+    normalizedRangeMax: 100,
+  },
+});
 
 clearPeaks.addEventListener('click', () => {
   meterInstance.clearPeaks();
