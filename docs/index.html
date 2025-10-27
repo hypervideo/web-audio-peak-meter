@@ -28,9 +28,8 @@
           console.log(`Current volume: ${volume.toFixed(2)}`);
       },
       {
-          audioMeterStandard: &quot;peak-sample&quot;,
           // 10 times per second
-          peakCallbackDelay: 1000 / 10, 
+          peakCallbackDelay: 1000 / 10,
           // Optional, map dB values to a normalized range
           peakCallbackNormalizeVolume: {
               dbRangeMin: -48,
@@ -45,7 +44,6 @@
 <h2>Options</h2>
 <p>The following options options are supported (the third parameter of the constructor)</p>
 <ul>
-<li>audioMeterStandard (string): Can be either <code>peak-sample</code>, or <code>true-peak</code> (default: <code>peak-sample</code>)</li>
 <li>peakHoldDuration (number): the number, in milliseconds, to hold the peak value before resetting (default: <code>0</code>, meaning never reset)</li>
 </ul>
 <h2>Frequently encountered problems</h2>

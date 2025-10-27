@@ -30,7 +30,6 @@ Then, at the bottom of your `<body>` tag, add the script tag for these meters. I
           console.log(`Current volume: ${volume.toFixed(2)}`);
       },
       {
-          audioMeterStandard: "peak-sample",
           // 10 times per second
           peakCallbackDelay: 1000 / 10,
           // Optional, map dB values to a normalized range
@@ -49,7 +48,6 @@ Then, at the bottom of your `<body>` tag, add the script tag for these meters. I
 
 The following options options are supported (the third parameter of the constructor)
 
-- audioMeterStandard (string): Can be either `peak-sample`, or `true-peak` (default: `peak-sample`)
 - peakHoldDuration (number): the number, in milliseconds, to hold the peak value before resetting (default: `0`, meaning never reset)
 
 ## Frequently encountered problems

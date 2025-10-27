@@ -1,5 +1,4 @@
 export interface PeakMeterConfig {
-  audioMeterStandard: string;
   peakHoldDuration: number;
   /**
    * When providing a callback, determine how often it should be called.
@@ -20,7 +19,6 @@ export interface PeakMeterConfig {
 }
 
 export const defaultConfig: PeakMeterConfig = {
-  audioMeterStandard: 'peak-sample',
   peakHoldDuration: 0,
   peakCallbackDelay: 'immediate',
 };
