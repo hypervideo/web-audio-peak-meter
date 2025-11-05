@@ -18,7 +18,7 @@ async function buildWorklet(fileName) {
     input: `./src/${fileName}-processor.ts`,
     plugins: [
       typescriptPlugin({
-        include: [`./src/${fileName}*.ts`, './src/global.d.ts'],
+        include: ['./src/true-peak*.ts', './src/peak-sample*.ts', './src/global.d.ts'],
         exclude: ['node_modules', 'lib', '**/*.test.ts'],
         lib: ['es2016', 'DOM'],
         sourceMap: false,
@@ -161,7 +161,6 @@ async function buildDocs() {
 }
 
 async function buildAll() {
-  await buildWorklet('peak-sample');
   await buildWorklet('true-peak');
   await buildMain();
   await buildDocs();

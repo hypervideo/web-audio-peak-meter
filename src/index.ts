@@ -1,14 +1,19 @@
 import { PeakMeterConfig, defaultConfig } from './config';
 import { dbFromFloat } from './utils';
-import peakSampleProcessor from './peak-sample-processor.txt';
 import truePeakProcessor from './true-peak-processor.txt';
+import { TruePeakProcessorMessage } from './true-peak-processor';
+
+export type Peak = {
+  volume: number;
+  amplitude: number;
+}
 
 export class WebAudioPeakMeter {
   channelCount: number;
   node?: AudioWorkletNode;
   config: PeakMeterConfig;
-  tempPeaks: Array<number>;
-  heldPeaks: Array<number>;
+  tempPeaks: Array<Peak>;
+  heldPeaks: Array<Peak>;
   peakHoldIntervals: Array<number | undefined>;
   animationRequestId?: number;
   intervalId?: number;
@@ -23,15 +28,17 @@ export class WebAudioPeakMeter {
      * peakCallbackNormalizeVolume.normalizedRangeMax).
      */
 
-    private peakCallback?: (peakVolume: number) => void,
+    private peakCallback?: (peak: Peak) => void,
     options: Partial<PeakMeterConfig> = {},
   ) {
     this.config = Object.assign({ ...defaultConfig }, options);
     this.channelCount = srcNode.channelCount;
-    this.tempPeaks = new Array(this.channelCount).fill(0.0);
-    this.heldPeaks = new Array(this.channelCount).fill(0.0);
-    this.peakHoldIntervals = new Array(this.channelCount).fill(undefined);
-    this.initNode();
+    this.tempPeaks = new Array<Peak>(this.channelCount).fill({ volume: -Infinity, amplitude: 0.0 } satisfies Peak);
+    this.heldPeaks = new Array<Peak>(this.channelCount).fill({ volume: -Infinity, amplitude: 0.0 } satisfies Peak);
+    this.peakHoldIntervals = new Array<number | undefined>(this.channelCount).fill(undefined);
+    this.initNode().catch((err) => {
+      console.error('WebAudioPeakMeter: Failed to initialize the AudioWorkletNode.', err);
+    });
   }
 
   private async initNode() {
@@ -40,18 +47,15 @@ export class WebAudioPeakMeter {
       return;
     }
 
-    const { audioMeterStandard } = this.config;
     try {
-      this.node = new AudioWorkletNode(this.srcNode.context, `${audioMeterStandard}-processor`, {
+      this.node = new AudioWorkletNode(this.srcNode.context, `true-peak-processor`, {
         parameterData: {},
       });
     } catch (err) {
-      const workletString =
-        audioMeterStandard === 'true-peak' ? truePeakProcessor : peakSampleProcessor;
-      const blob = new Blob([workletString], { type: 'application/javascript' });
+      const blob = new Blob([truePeakProcessor], { type: 'application/javascript' });
       const objectURL = URL.createObjectURL(blob);
       await this.srcNode.context.audioWorklet.addModule(objectURL);
-      this.node = new AudioWorkletNode(this.srcNode.context, `${audioMeterStandard}-processor`, {
+      this.node = new AudioWorkletNode(this.srcNode.context, `true-peak-processor`, {
         parameterData: {},
       });
     }
@@ -73,25 +77,28 @@ export class WebAudioPeakMeter {
     }
   }
 
-  private handleNodePortMessage(ev: MessageEvent) {
+  private handleNodePortMessage(ev: MessageEvent<TruePeakProcessorMessage>) {
     if (ev.data.type === 'message') {
       console.log(ev.data.message);
     }
     if (ev.data.type === 'peaks') {
-      const { peaks } = ev.data;
+      const { volumes, amplitudes } = ev.data;
       for (let i = 0; i < this.tempPeaks.length; i += 1) {
-        if (peaks.length > i) {
-          this.tempPeaks[i] = peaks[i];
+        if (volumes.length > i) {
+          this.tempPeaks[i] = { volume: volumes[i], amplitude: amplitudes[i] };
         } else {
-          this.tempPeaks[i] = 0.0;
+          this.tempPeaks[i] = { volume: -Infinity, amplitude: 0.0 };
         }
       }
-      if (peaks.length < this.channelCount) {
-        this.tempPeaks.fill(0.0, peaks.length);
+      if (volumes.length < this.channelCount) {
+        this.tempPeaks.fill({
+          volume: -Infinity,
+          amplitude: 0.0
+        }, volumes.length);
       }
-      for (let i = 0; i < peaks.length; i += 1) {
-        if (peaks[i] > this.heldPeaks[i]) {
-          this.heldPeaks[i] = peaks[i];
+      for (let i = 0; i < volumes.length; i += 1) {
+        if (volumes[i] > this.heldPeaks[i].volume || amplitudes[i] > this.heldPeaks[i].amplitude) {
+          this.heldPeaks[i] = { volume: Math.max(this.heldPeaks[i].volume, volumes[i]), amplitude: Math.max(this.heldPeaks[i].amplitude, amplitudes[i]) };
 
           // Re-start the interval so that the new peak is held for 1 full duration.
           if (this.peakHoldIntervals[i]) {
@@ -125,13 +132,19 @@ export class WebAudioPeakMeter {
     return {
       current: this.tempPeaks,
       maxes: this.heldPeaks,
-      currentDB: this.tempPeaks.map(dbFromFloat),
-      maxesDB: this.heldPeaks.map(dbFromFloat),
+      currentDB: this.tempPeaks.map(({ volume }) => dbFromFloat(volume)),
+      maxesDB: this.heldPeaks.map(({ volume }) => dbFromFloat(volume)),
     };
   }
 
-  public getNormalizedCurrentPeakVolume() {
-    let volume = dbFromFloat(Math.max(...this.heldPeaks));
+  public getNormalizedCurrentPeakVolume(): Peak {
+    // eslint-disable-next-line prefer-const
+    let { volume, amplitude } = this.tempPeaks.reduce((acc, peak) => {
+      return {
+        volume: Math.max(acc.volume, dbFromFloat(peak.volume)),
+        amplitude: Math.max(acc.amplitude, peak.amplitude),
+      };
+    }, { volume: -Infinity, amplitude: 0.0 });
     if (this.config.peakCallbackNormalizeVolume) {
       const { dbRangeMin, dbRangeMax, normalizedRangeMin, normalizedRangeMax } =
         this.config.peakCallbackNormalizeVolume;
@@ -140,7 +153,7 @@ export class WebAudioPeakMeter {
       volume = Math.max(dbRangeMin, Math.min(dbRangeMax, volume));
       volume = normalizedRangeMin + ((volume - dbRangeMin) * normalizedRange) / dbRange; // Linear mapping to normalized range
     }
-    return volume;
+    return { volume, amplitude };
   }
 
   cleanup() {

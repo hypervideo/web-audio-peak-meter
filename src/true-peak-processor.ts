@@ -1,4 +1,14 @@
+import { peakValues } from './peak-sample';
 import { calculateLPFCoefficients, truePeakValues } from './true-peak';
+
+export type TruePeakProcessorMessage = {
+  type: "message";
+  message: number[][];
+} | {
+  type: "peaks";
+  volumes: number[];
+  amplitudes: number[];
+}
 
 class TruePeakProcessor extends AudioWorkletProcessor {
   sampleRate: number;
@@ -26,14 +36,15 @@ class TruePeakProcessor extends AudioWorkletProcessor {
     if (input.length > this.lpfBuffers.length) {
       for (let i = 1; i <= input.length; i += 1) {
         if (i > this.lpfBuffers.length) {
-          this.lpfBuffers.push(new Array(this.numCoefficients).fill(0));
+          this.lpfBuffers.push(new Array<number>(this.numCoefficients).fill(0));
         }
       }
     }
-    const maxes = truePeakValues(input, this.lpfBuffers, this.lpfCoefficients, this.upsampleFactor);
-    this.port.postMessage({type: 'peaks', peaks: maxes});
+    const volumes = truePeakValues(input, this.lpfBuffers, this.lpfCoefficients, this.upsampleFactor);
+    const amplitudes = peakValues(input);
+    this.port.postMessage({type: 'peaks', volumes, amplitudes} satisfies TruePeakProcessorMessage);
     if (this.processCount % 100 === 0) {
-      this.port.postMessage({type: 'message', message: this.lpfBuffers});
+      this.port.postMessage({type: 'message', message: this.lpfBuffers} satisfies TruePeakProcessorMessage);
     }
     this.processCount += 1;
     return true;
