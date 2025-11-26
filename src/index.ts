@@ -139,7 +139,7 @@ export class WebAudioPeakMeter {
 
   public getNormalizedCurrentPeakVolume(): Peak {
     // eslint-disable-next-line prefer-const
-    let { volume, amplitude } = this.tempPeaks.reduce((acc, peak) => {
+    let { volume, amplitude } = this.heldPeaks.reduce((acc, peak) => {
       return {
         volume: Math.max(acc.volume, dbFromFloat(peak.volume)),
         amplitude: Math.max(acc.amplitude, peak.amplitude),
