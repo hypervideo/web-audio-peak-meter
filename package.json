@@ -1,6 +1,6 @@
 {
   "name": "@hypervideo/web-audio-peak-meter",
-  "version": "5.0.2",
+  "version": "5.0.3",
   "description": "A customizable peak meter using the web audio API",
   "main": "lib/index.js",
   "module": "lib/index.esm.js",
