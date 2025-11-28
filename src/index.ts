@@ -33,8 +33,8 @@ export class WebAudioPeakMeter {
   ) {
     this.config = Object.assign({ ...defaultConfig }, options);
     this.channelCount = srcNode.channelCount;
-    this.tempPeaks = new Array<Peak>(this.channelCount).fill({ volume: -Infinity, amplitude: 0.0 } satisfies Peak);
-    this.heldPeaks = new Array<Peak>(this.channelCount).fill({ volume: -Infinity, amplitude: 0.0 } satisfies Peak);
+    this.tempPeaks = new Array<Peak>(this.channelCount).fill({ volume: -Number.MAX_VALUE, amplitude: 0.0 } satisfies Peak);
+    this.heldPeaks = new Array<Peak>(this.channelCount).fill({ volume: -Number.MAX_VALUE, amplitude: 0.0 } satisfies Peak);
     this.peakHoldIntervals = new Array<number | undefined>(this.channelCount).fill(undefined);
     this.initNode().catch((err) => {
       console.error('WebAudioPeakMeter: Failed to initialize the AudioWorkletNode.', err);
@@ -87,12 +87,12 @@ export class WebAudioPeakMeter {
         if (volumes.length > i) {
           this.tempPeaks[i] = { volume: volumes[i], amplitude: amplitudes[i] };
         } else {
-          this.tempPeaks[i] = { volume: -Infinity, amplitude: 0.0 };
+          this.tempPeaks[i] = { volume: -Number.MAX_VALUE, amplitude: 0.0 };
         }
       }
       if (volumes.length < this.channelCount) {
         this.tempPeaks.fill({
-          volume: -Infinity,
+          volume: -Number.MAX_VALUE,
           amplitude: 0.0
         }, volumes.length);
       }
@@ -144,7 +144,7 @@ export class WebAudioPeakMeter {
         volume: Math.max(acc.volume, dbFromFloat(peak.volume)),
         amplitude: Math.max(acc.amplitude, peak.amplitude),
       };
-    }, { volume: -Infinity, amplitude: 0.0 });
+    }, { volume: -Number.MAX_VALUE, amplitude: 0.0 });
     if (this.config.peakCallbackNormalizeVolume) {
       const { dbRangeMin, dbRangeMax, normalizedRangeMin, normalizedRangeMax } =
         this.config.peakCallbackNormalizeVolume;
