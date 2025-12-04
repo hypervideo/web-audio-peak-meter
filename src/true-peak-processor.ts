@@ -26,7 +26,6 @@ class TruePeakProcessor extends AudioWorkletProcessor {
     this.lpfCoefficients = calculateLPFCoefficients(this.numCoefficients, this.upsampleFactor);
     // this.lpfBuffers = new Array(this.numChannels).fill(new Array(numCoefficients).fill(0));
     this.lpfBuffers = [];
-    this.port.postMessage({type: 'message', message: `true peak inited? ${this.sampleRate}`});
   }
 
   process(inputs:Float32Array[][]) {
